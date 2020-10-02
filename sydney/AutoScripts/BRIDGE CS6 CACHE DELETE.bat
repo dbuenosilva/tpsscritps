@@ -1,0 +1,1 @@
+del "%appdata%\Adobe\Bridge cs6\Cache" /F /S /Q

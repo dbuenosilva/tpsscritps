@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FreeFileSync XmlType="REAL" XmlFormat="1">
+    <Directories>
+        <Item>E:\Dropbox\03_Melbourne Incoming Jobs</Item>
+        <Item>I:\01_MELBOURNE_CLIENTS\NEWCLIENTS</Item>
+    </Directories>
+    <Delay>10</Delay>
+    <Commandline HideConsole="false">"C:\Program Files\FreeFileSync\FreeFileSync.exe" "C:\AutoScripts\sync settings dropbox melbourne incoming to melbourne newclients on NAS.ffs_batch"</Commandline>
+</FreeFileSync>

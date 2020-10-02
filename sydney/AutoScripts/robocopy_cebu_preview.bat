@@ -1,0 +1,1 @@
+robocopy  "\\galaxy\imagedata\0_CLIENT FOLDER\01_Client Previews" "E:\Dropbox\Client Preview CEBU" /S /XO /maxage:1

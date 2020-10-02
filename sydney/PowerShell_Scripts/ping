@@ -1,0 +1,11 @@
+
+Pinging studio [fe80::9cc8:4550:8023:e315%11] with 32 bytes of data:
+Reply from fe80::9cc8:4550:8023:e315%11: time<1ms 
+Reply from fe80::9cc8:4550:8023:e315%11: time<1ms 
+Reply from fe80::9cc8:4550:8023:e315%11: time<1ms 
+Reply from fe80::9cc8:4550:8023:e315%11: time<1ms 
+
+Ping statistics for fe80::9cc8:4550:8023:e315%11:
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 0ms, Maximum = 0ms, Average = 0ms
