@@ -1,0 +1,1 @@
+del C:\$RECYCLE.BIN /s /f /q
