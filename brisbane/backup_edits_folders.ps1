@@ -39,10 +39,10 @@ TIP: Set-Execution Policy Bypass
 >Maybe the TASK SCHEDULER in the server is disabled or has crashed?
 #>
 
-$SMD_ROOT = "\\192.168.33.46\imagedata\01_CLIENT_FOLDER\*_??\*_Edits\*.jpg" 
+$SMD_ROOT = "\\192.168.254.5\imagedata\01_CLIENT_FOLDER\*_??\*_Edits\*.jpg" 
 $SMD_DEST = "F:\EDIT_BACKUPS\" ## external HD
-$DATE = Get-Date;
-$LOG_ROOT = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\brisbane_edits_backup\"
+######$DATE = Get-Date; NEED TO BE FIX
+$LOG_ROOT = "\\192.168.254.5\IT\AutoScripts\Logs\PowerShell\brisbane_edits_backup\"
 $LOG_ROOT = $($LOG_ROOT + $DATE.Year + "\" )
 
 # Evaluating LOG directory
