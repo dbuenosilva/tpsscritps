@@ -62,54 +62,57 @@ function Wait-ProSelect
 $ERROR_THRESHOLD = 2
 
 
-$FILE_SERVER = "\\axion.THEPHOTOSTUDIO.local\"
-$DROPBOX_ALBUMS_FOLDER = "C:\Users\tempprod\Dropbox\CLIENT_VIEWING_IMAGES\Albums\Brisbane"
+$FILE_SERVER = "\\192.168.254.5\"
+$DROPBOX_ALBUMS_FOLDER = "\\192.168.33.51\d\Dropbox\CLIENT_VIEWING_IMAGES\Albums\Brisbane"
 # should always end with a \
 $LOG_ROOT = $($FILE_SERVER + "IT\AutoScripts\Logs\PowerShell\Create_Ps_Albums\")
+$LOG_ROOT = $($LOG_ROOT + (Get-Date).Year + "\" )
 $ORDER_ROOT = $($FILE_SERVER + "imagedata\01_CLIENT_FOLDER\")
 
-$DATE = Get-Date;
+# Evaluating LOG directory
+try {
+    if (!(Test-path -Path $LOG_ROOT)) {
+        New-Item -ItemType Directory $LOG_ROOT;
+    }
+}
+catch [System.IO.IOException] {
+    ##Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | evaluanting LOG directory! ")    
+    exit exit-gracefully(102)
+}
+
+# Evaluating LOG file
+$LOG_FILE = $($LOG_ROOT + (Get-Culture).DateTimeFormat.GetAbbreviatedMonthName((Get-Date).month) + ".log")
+try {
+    if (!(Test-path $LOG_FILE -PathType Leaf)) {
+        New-Item -ItemType File $LOG_FILE;
+    }
+}
+catch [System.IO.IOException] {
+  ##  Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | evaluanting LOG file! ")        
+    exit exit-gracefully(102)
+}
 
 if(!(Test-Path -Path $ORDER_ROOT))
 {
+    Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | evaluanting PATH: " + $ORDER_ROOT)            
     exit-gracefully(99)
 }
 
 #only folders with format ABC123_AA are considered valid client folders.
 $SESSIONS = Get-ChildItem -Directory -Path $ORDER_ROOT -Filter *_??
 
-
 if($SESSIONS.Length -lt 2)
 {
+    Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | SESSIONS.Length: " + $SESSIONS.Length)            
     exit-gracefully(100)
 }
 
-
-$LOG_ROOT = $($LOG_ROOT + $DATE.Year + "\" + (Get-Culture).DateTimeFormat.GetAbbreviatedMonthName($DATE.month) +"\")
-
-try
-{
-    if(!(Test-path -Path $LOG_ROOT))
-    {
-        New-Item -ItemType Directory $LOG_ROOT;
-    }
-
-}
-catch [System.IO.IOException]
-{
-    exit exit-gracefully(102)
-}
-
-Add-Content $($LOG_ROOT + (Get-Culture).DateTimeFormat.GetAbbreviatedMonthName($DATE.month) +".log")`
-  $("`n`n"+ $DATE + "***************************STARTED CREATING PROSELECT ALBUMS***************************   ")
-
-  #exit 0
+Add-Content $($LOG_FILE) $( "" + (Get-Date) + "| START | STARTED CREATING PROSELECT ALBUMS| ******************************************************   ")
 
 $proselect = Get-Process "ProSelect" -ErrorAction SilentlyContinue
 if($proselect)
 {
     Write-Host "program running"
-
 }
 else
 {
@@ -118,29 +121,27 @@ else
     Wait-ProSelect
 }
 
-
 $ERROR_COUNT
 foreach ($session in $SESSIONS)
 {
     #Write-Host $session.FullName
     if(Test-Path $($session.FullName +"\" + $session.Name.Split('_')[0] +"_Edits"))
     {
-        if((Get-ChildItem -Filter "*.psa" $($session.FullName +"\" + $session.Name.Split('_')[0] +"_Edits"))  -ne $null )
+        if((Get-ChildItem -Filter "*.psa" $($session.FullName +"\" + $session.Name.Split('_')[0] +"_Edits")) -ne $null )
         {
             #Write-Host "Album Exists For: " $session.FullName
         }
         else
         {
             Write-Host "No Album Found For " $session.FullName
-            if(($DATE - $session.LastWriteTime).TotalHours -gt 2)
+            Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| WARNING | No Album Found For " + $session.FullName)                        
+            if(((Get-Date) - $session.LastWriteTime).TotalHours -gt 2)
             {
                 $album_images = Get-ChildItem -Filter "*.jpg" $($session.FullName +"\" + $session.Name.Split('_')[0] +"_Edits") -File | where Length -lt 30mb
                 if($album_images.Count -gt 10 )
                 {
                     try
-                    {
-
-                    
+                    {                 
                         Write-Host "Eligible"
                         C:\PSConsole\PSConsole.exe newAlbum saveChanges='false'
                         foreach($album_image in $album_images)
@@ -149,14 +150,12 @@ foreach ($session in $SESSIONS)
                         }
                         #C:\PSConsole\PSConsole.exe addImageFolder $($session.FullName +"\" + $session.Name.Split('_')[0] +"_Edits")
                         C:\PSConsole\PSConsole.exe saveAlbumAs $($session.FullName +"\" + $session.Name.Split('_')[0] +"_Edits" + "\" + $session.Name + ' Auto Album.psa')
-                        Add-Content $($LOG_ROOT + (Get-Culture).DateTimeFormat.GetAbbreviatedMonthName($DATE.month) +".log")`
-  $(""+ $DATE + "CREATED ALBUM FOR " + $session.Name)
+                        Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| CREATED | " + $session.Name)                  
                         Copy-Item $($session.FullName +"\" + $session.Name.Split('_')[0] +"_Edits" + "\" + $session.Name + ' Auto Album.psa') -Destination $DROPBOX_ALBUMS_FOLDER
                     }
                     catch
                     {
-                        Add-Content $($LOG_ROOT + (Get-Culture).DateTimeFormat.GetAbbreviatedMonthName($DATE.month) +".log")`
-  $(""+ $DATE + "Couldn't Create Album For: " + $session.Name)
+                        Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | " + "Couldn't Create Album For: " + $session.Name)                  
                     }
                  }
             }
@@ -169,10 +168,7 @@ foreach ($session in $SESSIONS)
 
 }
 
-
-
-Add-Content $($LOG_ROOT + (Get-Culture).DateTimeFormat.GetAbbreviatedMonthName($DATE.month) +".log")`
-  $("`n`n"+ $DATE + "***************************FINISHED CREATING PROSELECT ALBUMS***************************   ")
+Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| END | FINISHED CREATING PROSELECT ALBUMS ")                  
 
 Remove-Variable -ErrorAction Ignore SESSIONS, ERROR_THRESHOLD ,ERROR_COUNT
 
@@ -180,8 +176,6 @@ Remove-Variable -ErrorAction Ignore SESSIONS, ERROR_THRESHOLD ,ERROR_COUNT
  function exit-gracefully($exit_code)
  {
     Remove-Variable -ErrorAction Ignore SESSIONS, ERROR_THRESHOLD ,ERROR_COUNT
-    Add-Content $($LOG_ROOT + (Get-Culture).DateTimeFormat.GetAbbreviatedMonthName($DATE.month) +".log")`
-      $("`n`n"+ $DATE + "                      xxxxxxxx !!x> an exception occured. Exiting gracefully. Internal error code: " + $exit_code)
-    
+      Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | xxxxxxxx !!x> an exception occured. Exiting gracefully. Internal error code: " + $exit_code) 
     exit $exit_code
  }
