@@ -41,7 +41,6 @@ TIP: Set-Execution Policy Bypass
 
 $SMD_ROOT = "\\192.168.254.5\imagedata\01_CLIENT_FOLDER\*_??\*_Edits\*.jpg" 
 $SMD_DEST = "F:\EDIT_BACKUPS\" ## external HD
-######$DATE = Get-Date; NEED TO BE FIX
 $LOG_ROOT = "\\192.168.254.5\IT\AutoScripts\Logs\PowerShell\brisbane_edits_backup\"
 $LOG_ROOT = $($LOG_ROOT + (Get-Date).Year + "\" )
 
@@ -77,7 +76,7 @@ Try {
     $SMD = Get-ChildItem $SMD_ROOT 
 }
 catch [System.Exception] {
-    Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | Get-ChildItem execution! ")
+    Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | Could not get list of directories. Get-ChildItem failed execution! ")
 }
 
 if (!(Test-path -Path $SMD_DEST)) {
