@@ -16,23 +16,23 @@
 
 # importing classes and functions
 . C:\workspace\scripts\brisbane\functions\getMystratusSessionStatus.ps1
+. C:\workspace\scripts\brisbane\functions\tpsLib.ps1
 
-Add-Content $($LOG_FILE) $( "" + (Get-Date) + "| START | GET SESSION STATUS TASK | ******************************************************   ")
-
-$dir    = "\\192.168.33.46\imagedata\01_CLIENT_FOLDER";
-$log    = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\brisbane_archive_process\" + (Get-Date).Year + "\";
+$LOG_ROOT = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\retrieving_stratus_status\";
+$dir = "\\192.168.33.46\imagedata\01_CLIENT_FOLDER\diego";
 $filter = "";
+$file = Get-Date -format "yyyyMMdd-hhmm";
 
-$result = getMystratusSessionStatus($dir, $filter, $log); 
+logToFile $LOG_ROOT "Starting get_mystratus_session_status ******************************************************"
+
+$result = $(getMystratusSessionStatus $dir $filter $LOG_ROOT);
 
 for ($i = 0; $i -lt $result.length; $i++) {
     try {
         Add-Content $('C:\archiveworks\Session_Status_Report_' + $file + ".csv") $( $result[$i].Session + "," + $result[$i ].Status)
     }
     catch [System.Net.WebException] {
-        Add-Content $($LOG_FILE) $( "" + (Get-Date) + "| ERROR | Session " + $result[$i].Session + " ")
+        logToFile $LOG_ROOT ("Session " + $result[$i].Session + " ") "ERROR"
     }
 } 
-Add-Content $($LOG_FILE) $( "" + (Get-Date) + "| END | FINISHED GET SESSION STATUS TASK | ******************************************************   ")
-
-return $sessionToReturn 
+logToFile $LOG_ROOT "Ending get_mystratus_session_status ******************************************************" "INFO"
