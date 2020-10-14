@@ -1,9 +1,9 @@
 <##########################################################################
 # Project: Generic
-# File: SessionStatus.ps1
+# File: Session.ps1
 # Author: Diego Bueno - diego@thephotostudio.com.au
 # Date: 12/10/2020
-# Description: Define class SessionStatus              
+# Description: Define class Session       
 #
 ##########################################################################
 # Maintenance                            
@@ -13,12 +13,16 @@
 #
 ##########################################################################>
 
-class SessionStatus {
-    [string]$Session
-    [string]$Status
+class Session {
+    [string]$sessionNumber
+    [string]$status
+    [string]$path
+    [string]$folder
+    [decimal]$numberOfFiles
+
+    [string]ToString(){
+        return ("{0}" -f $this.sessionNumber)
+    }
 }
 
-#$sessionStatus = [SessionStatus]::new()
-#$sessionStatus.Session = "400190133NYM"
-#$sessionStatus.Status = "Archive Pending"
 
