@@ -18,7 +18,12 @@ class Session {
     [string]$status
     [string]$path
     [string]$folder
-    [decimal]$numberOfFiles
+    [decimal]$numberOfEditsFiles
+    [decimal]$numberOfProductionsFiles
+    [decimal]$numberOfSelectsFiles
+    [decimal]$numberOfUploadsFiles
+    [decimal]$numberOfWorkingFiles
+    [DateTime]$statisticsDate
 
     [string]ToString(){
         return ("{0}" -f $this.sessionNumber)

@@ -17,8 +17,8 @@
 . C:\workspace\scripts\brisbane\functions\tpsLib.ps1
 
 $LOG_ROOT = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\retrieving_stratus_status\";
-$imageData    = "\\192.168.33.46\imagedata\01_CLIENT_FOLDER\";
-$externalHD   = "H:\Archives" #"E:\" #  "F:\Brisbane\"
+$imageData    = "\\192.168.33.46\imagedata\01_CLIENT_FOLDER\diego\";
+$externalHD   = "E:\Archives" #"G:\Archives\" #"H:\Archives" #"E:\" #  "F:\Brisbane\"
 $filter = "Archive Pending";
 $file   ='C:\archiveworks\Session_Status_Report_' + $filter.Replace(' ','_') + '_' +  (Get-Date -format "yyyyMMdd-hhmm") + ".csv"
 

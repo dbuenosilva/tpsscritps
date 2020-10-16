@@ -69,7 +69,10 @@ function logToFile {
         $message,
         [parameter(Mandatory=$false)]
         [String]
-        $type = "INFO"
+        $type = "INFO",
+        [parameter(Mandatory=$false)]
+        [Object]
+        $exceptionObj
         )    
 
 $folderToLog = $($folderToLog + (Get-Date).Year + "\" );
@@ -85,6 +88,9 @@ catch [System.IO.IOException] {
     Write-Output $(  "" + (Get-Date) + " ERROR evaluanting LOG directory " + $folderToLog);
     exit exit-gracefully(102);
 }
+catch {
+    logToFile $LOG_ROOT $("Unknown error") "ERROR" -exceptionObj $_ 
+}    
 
 # Evaluating LOG file
 $fileToLog = $($folderToLog + (Get-Culture).DateTimeFormat.GetAbbreviatedMonthName((Get-Date).month) + ".log");
@@ -97,8 +103,32 @@ catch [System.IO.IOException] {
     Write-Output $(  "" + (Get-Date) + " ERROR evaluanting LOG file " + $fileToLog)        
     exit exit-gracefully(102);
 }
+catch {
+    logToFile $LOG_ROOT $("Unknown error") "ERROR" -exceptionObj $_ 
+}
 
-Add-Content $fileToLog  $( "" + (Get-Date) + "|" + $type + "|" + $message);
+if ($exceptionObj) {
+    $errormsg = $exceptionObj.ToString()
+    $positionmsg = $exceptionObj.InvocationInfo.PositionMessage
+    $exception = $exceptionObj.Exception.message
+ #   $stacktrace = $exceptionObj.ScriptStackTrace
+ #   $failingline = $exceptionObj.InvocationInfo.Line
+ #   $pscommandpath = $exceptionObj.InvocationInfo.PSCommandPath
+ #   $failinglinenumber = $exceptionObj.InvocationInfo.ScriptLineNumber
+#    $scriptname = $exceptionObj.InvocationInfo.ScriptName
+
+   $message +=  " `n" + "ERROR details: " + $exception + " `n" + $positionmsg
+
+
+   ## NEED TO SEND EMAIL HERE   
+
+}
+
+
+#Add-Content does not work with another program reading the log simutaneously, change to Out-File
+#Add-Content $fileToLog  $( "" + (Get-Date) + "|" + $type + "|" + $message);
+$logstring = $( "" + (Get-Date) + "|" + $type + "|" + $message);
+$logstring | Out-File $fileToLog -Append 
 
 }
 
@@ -164,6 +194,9 @@ function getMystratusSessionStatus {
     catch [System.Exception] {
         logToFile $LOG_FILE "Could not get list of directories. Get-ChildItem failed execution!" "ERROR"
     }
+    catch {
+        logToFile $LOG_ROOT $("Unknown error") "ERROR" -exceptionObj $_ 
+    }    
 
     for ($i = 0; $i -lt $sessions.length; $i++) {
 
@@ -171,6 +204,8 @@ function getMystratusSessionStatus {
 
             $sessionName     = $sessions[$i].Name.Substring(0, $sessions[$i].Name.IndexOf('_'))
             logToFile $LOG_FILE ("Querying session: " + $sessionName)
+
+            $session = $null;
 
             try {
                 $session_data = Invoke-RestMethod -Uri $($api_url + $sessionName ) -Headers $Headers
@@ -180,21 +215,28 @@ function getMystratusSessionStatus {
                 $session.sessionNumber = $sessionName
                 $session.status = $session_data.StatusDescription
                 $session.path   = $sessions[$i].FullName  
-                $session.folder = $sessions[$i].Name  
-                $session.numberOfFiles = (Get-ChildItem $sessions[$i].FullName -Recurse -File | Measure-Object).Count
+                $session.folder = $sessions[$i].Name
+                $session.numberOfEditsFiles       = (Get-ChildItem $($sessions[$i].FullName + "\" +$sessionName + "_Edits") -Recurse -File | Measure-Object).Count
+                $session.numberOfProductionsFiles = (Get-ChildItem $($sessions[$i].FullName + "\" +$sessionName + "_Productions") -Recurse -File | Measure-Object).Count
+                $session.numberOfSelectsFiles     = (Get-ChildItem $($sessions[$i].FullName + "\" +$sessionName + "_Selects") -Recurse -File | Measure-Object).Count
+                $session.numberOfUploadsFiles     = (Get-ChildItem $($sessions[$i].FullName + "\" +$sessionName + "_Uploads*") -Recurse -File | Measure-Object).Count
+                $session.numberOfWorkingFiles     = (Get-ChildItem $($sessions[$i].FullName + "\" +$sessionName + "_Working") -Recurse -File | Measure-Object).Count
+                $session.statisticsDate           = (Get-Date)
             }
             catch [System.Net.WebException] {
-                logToFile $LOG_FILE ("Session " + $sessionName + " not found ") "WARNING"
+                logToFile $LOG_FILE $("Session " + $sessionName + " not found ") "WARNING"
 
                 $session = [Session]::new()
                 $session.sessionNumber = $sessionName 
                 $session.status  = "Session not found on Stratus"
             }
+            catch {
+                    logToFile $LOG_ROOT $("Fail requesting session " + $result[$i].sessionNumber) "ERROR" -exceptionObj $_                 
+            }
           
-            if ( ! $filter -or ( $filter -and $filter.Contains($session.status))) {
+            if ( $session -and (! $filter -or ( $filter -and $filter.Contains($session.status)))) {
                 $sessionToReturn += $session;
             }            
-
         }
     } 
     logToFile $LOG_FILE "End of getMystratusSessionStatus function execution..."    
@@ -282,9 +324,9 @@ function getSessionArchivedInDisk {
         $sessions = Get-ChildItem $SMD_ROOT 
         logToFile $LOG_FILE ("Found " + $sessions.Length + " sessions") "INFO" 
     }
-    catch [System.Exception] {
-        logToFile $LOG_FILE "Could not get list of directories. Get-ChildItem failed execution!" "ERROR"
-    }
+    catch {
+        logToFile $LOG_ROOT $("Unknown error") "ERROR" -exceptionObj $_ 
+    }    
 
     for ($i = 0; $i -lt $sessions.length; $i++) {
 
@@ -308,9 +350,11 @@ function getSessionArchivedInDisk {
                 $sessionStatus.sessionNumber = $sessionName 
                 $sessionStatus.status  = "Fail to retrieve data from session " + $sessionName
             }
-          
+            catch {
+                logToFile $LOG_ROOT $("Unknown error") "ERROR" -exceptionObj $_ 
+            }    
+         
             $sessionToReturn += $sessionStatus;
-
         }
     } 
     logToFile $LOG_FILE "End of getSessionArchivedInDisk function execution..."    
@@ -363,9 +407,9 @@ function findItemInArrayOfObjects {
             }
 
         }
-        catch [System.Net.WebException] {
-            logToFile $LOG_ROOT "Fail to search at array" "ERROR"
-        }
+        catch {
+            logToFile $LOG_ROOT $("Unknown error") "ERROR" -exceptionObj $_ 
+        }    
     } 
 
 return $position 

@@ -17,8 +17,8 @@
 # importing classes and functions
 . C:\workspace\scripts\brisbane\functions\tpsLib.ps1
 
-$LOG_ROOT = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\retrieving_stratus_status\";
-$dir    = "\\192.168.33.46\imagedata\01_CLIENT_FOLDER\diego";
+$LOG_ROOT = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\retrieving-stratus-status\";
+$dir    = "\\192.168.33.46\imagedata\01_CLIENT_FOLDER\diego\";
 $filter = "" # "Archive Pending";
 $file   ='C:\archiveworks\Session_Status_Report_' + $filter.Replace(' ','_') + '_' +  (Get-Date -format "yyyyMMdd-hhmm") + ".csv"
 
@@ -28,13 +28,14 @@ $result = $(getMystratusSessionStatus $dir $filter $LOG_ROOT);
 
 for ($i = 0; $i -lt $result.length; $i++) {
     try {
-            Add-Content $file $( $result[$i].sessionNumber + "," + $result[$i ].status + "," + $result[$i ].path + "," + $result[$i ].folder + "," + $result[$i ].numberOfFiles            )
+        Add-Content $file $( $result[$i].sessionNumber + "," + $result[$i].status + "," + $result[$i].path + "," + $result[$i].folder 
+        + "," + $result[$i].numberOfEditsFiles.tostring() + "," + $result[$i].numberOfProductionsFiles.tostring() + "," + $result[$i].numberOfSelectsFiles.tostring()
+        + "," + $result[$i].numberOfUploadsFiles.tostring()  + "," + $result[$i].numberOfWorkingFiles.tostring()  + "," + $result[$i].statisticsDate )
     }
-    catch [System.Net.WebException] {
-        logToFile $LOG_ROOT ("Session " + $result[$i].sessionNumber + " did not add in file " + $file ) "ERROR"
+    catch {
+      logToFile $LOG_ROOT $("Session " + $result[$i].sessionNumber + " did not add in file " + $file.ToString()) "ERROR" -exceptionObj $_ 
     }
 } 
-
 
 if ($result.length -eq 0) {
     if ($filter) {
