@@ -16,17 +16,19 @@
 # importing classes and functions
 . C:\workspace\scripts\brisbane\functions\tpsLib.ps1
 
-$LOG_ROOT = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\retrieving_stratus_status\";
-$imageData    = "\\192.168.33.46\imagedata\01_CLIENT_FOLDER\diego\";
-$externalHD   = "E:\Archives" #"G:\Archives\" #"H:\Archives" #"E:\" #  "F:\Brisbane\"
+$LOG_ROOT = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\retrieving-stratus-status\";
+$imageData    = "\\192.168.33.46\imagedata\01_CLIENT_FOLDER\";
+$externalHD   = "H:\Archives" #"G:\Archives\" #"H:\Archives" #"E:\" #  "F:\Brisbane\"
 $filter = "Archive Pending";
 $file   ='C:\archiveworks\Session_Status_Report_' + $filter.Replace(' ','_') + '_' +  (Get-Date -format "yyyyMMdd-hhmm") + ".csv"
 
 logToFile $LOG_ROOT "Starting evaluate_archive ******************************************************"
 
-$result = $(getMystratusSessionStatus $imageData $filter $LOG_ROOT);
-
+logToFile $LOG_ROOT "Retrieving sessions from External HardDrive"
 $archive = $(getSessionArchivedInDisk $externalHD $LOG_ROOT)
+
+logToFile $LOG_ROOT "Retrieving sessions from ImageData"
+$result = $(getMystratusSessionStatus $imageData $filter $LOG_ROOT);
 
 # report itens found in imageData and archive
 for ($i = 0; $i -lt $result.length; $i++) {
@@ -35,12 +37,20 @@ for ($i = 0; $i -lt $result.length; $i++) {
         $nItemFound = findItemInArrayOfObjects $result[$i] $archive
 
         if ($nItemFound -gt 0) {
-            Add-Content $file $( $result[$i].sessionNumber + "," + $result[$i ].status + "," + $result[$i ].path + "," + $result[$i ].folder + "," + $result[$i ].numberOfFiles  + "," + $archive[$nItemFound].sessionNumber + "," + $archive[$nItemFound].status + "," + $archive[$nItemFound].path + "," + $archive[$nItemFound].folder + "," + $archive[$nItemFound].numberOfFiles )        
+            Add-Content $file $( $result[$i].sessionNumber + "," + $result[$i].status + "," + $result[$i].path + "," + $result[$i].folder + "," `
+            + $result[$i].numberOfEditsFiles.tostring() + "," + $result[$i].numberOfProductionsFiles.tostring() + "," `
+            + $result[$i].numberOfSelectsFiles.tostring() + "," + $result[$i].numberOfUploadsFiles.tostring()  + "," `
+            + $result[$i].numberOfWorkingFiles.tostring()  + "," + $result[$i].statisticsDate + "," `
+            `
+            + $archive[$nItemFound].sessionNumber + "," + $archive[$nItemFound].status + "," + $archive[$nItemFound].path + "," + $archive[$nItemFound].folder + "," `
+            + $archive[$nItemFound].numberOfEditsFiles.tostring() + "," + $archive[$nItemFound].numberOfProductionsFiles.tostring() + "," `
+            + $archive[$nItemFound].numberOfSelectsFiles.tostring() + "," + $archive[$nItemFound].numberOfUploadsFiles.tostring()  + "," `
+            + $archive[$nItemFound].numberOfWorkingFiles.tostring()  + "," + $archive[$nItemFound].statisticsDate)
         }
     }
 
-    catch [System.Net.WebException] {
-        logToFile $LOG_ROOT ("Fail to look at " + $result[$i].Session  ) "ERROR"
+    catch {
+        logToFile $LOG_ROOT $("Unknown error") "ERROR" -exceptionObj $_ 
     }
 } 
 

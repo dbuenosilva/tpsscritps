@@ -336,25 +336,23 @@ function getSessionArchivedInDisk {
             logToFile $LOG_FILE ("Retrieving data from session: " + $sessionName)
 
             try {
-                $sessionStatus = [Session]::new()
-                $sessionStatus.sessionNumber = $sessionName
-                $sessionStatus.status = 'External HD'
-                $sessionStatus.path   = $sessions[$i].FullName  
-                $sessionStatus.folder = $sessions[$i].Name  
-                $sessionStatus.numberOfFiles = (Get-ChildItem $sessions[$i].FullName -Recurse -File | Measure-Object).Count
-            }
-            catch [System.Net.WebException] {
-                logToFile $LOG_FILE ("Fail to retrieve data from session " + $sessionName + " ") "WARNING"
-
-                $sessionStatus = [SessionStatus]::new()
-                $sessionStatus.sessionNumber = $sessionName 
-                $sessionStatus.status  = "Fail to retrieve data from session " + $sessionName
+                $session = [Session]::new()
+                $session.sessionNumber = $sessionName
+                $session.status = 'External HD'
+                $session.path   = $sessions[$i].FullName  
+                $session.folder = $sessions[$i].Name  
+                $session.numberOfEditsFiles       = (Get-ChildItem $($sessions[$i].FullName + "\" +$sessionName + "_Edits") -Recurse -File | Measure-Object).Count
+                $session.numberOfProductionsFiles = (Get-ChildItem $($sessions[$i].FullName + "\" +$sessionName + "_Productions") -Recurse -File | Measure-Object).Count
+                $session.numberOfSelectsFiles     = (Get-ChildItem $($sessions[$i].FullName + "\" +$sessionName + "_Selects") -Recurse -File | Measure-Object).Count
+                $session.numberOfUploadsFiles     = (Get-ChildItem $($sessions[$i].FullName + "\" +$sessionName + "_Uploads*") -Recurse -File | Measure-Object).Count
+                $session.numberOfWorkingFiles     = (Get-ChildItem $($sessions[$i].FullName + "\" +$sessionName + "_Working") -Recurse -File | Measure-Object).Count
+                $session.statisticsDate           = (Get-Date)                
             }
             catch {
                 logToFile $LOG_ROOT $("Unknown error") "ERROR" -exceptionObj $_ 
             }    
          
-            $sessionToReturn += $sessionStatus;
+            $sessionToReturn += $session;
         }
     } 
     logToFile $LOG_FILE "End of getSessionArchivedInDisk function execution..."    

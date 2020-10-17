@@ -28,9 +28,10 @@ $result = $(getMystratusSessionStatus $dir $filter $LOG_ROOT);
 
 for ($i = 0; $i -lt $result.length; $i++) {
     try {
-        Add-Content $file $( $result[$i].sessionNumber + "," + $result[$i].status + "," + $result[$i].path + "," + $result[$i].folder 
-        + "," + $result[$i].numberOfEditsFiles.tostring() + "," + $result[$i].numberOfProductionsFiles.tostring() + "," + $result[$i].numberOfSelectsFiles.tostring()
-        + "," + $result[$i].numberOfUploadsFiles.tostring()  + "," + $result[$i].numberOfWorkingFiles.tostring()  + "," + $result[$i].statisticsDate )
+        Add-Content $file $( $result[$i].sessionNumber + "," + $result[$i].status + "," + $result[$i].path + "," + $result[$i].folder + "," `
+        + $result[$i].numberOfEditsFiles.tostring() + "," + $result[$i].numberOfProductionsFiles.tostring() + "," `
+        + $result[$i].numberOfSelectsFiles.tostring() + "," + $result[$i].numberOfUploadsFiles.tostring()  + "," `
+        + $result[$i].numberOfWorkingFiles.tostring()  + "," + $result[$i].statisticsDate )
     }
     catch {
       logToFile $LOG_ROOT $("Session " + $result[$i].sessionNumber + " did not add in file " + $file.ToString()) "ERROR" -exceptionObj $_ 
