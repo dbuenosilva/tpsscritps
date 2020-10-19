@@ -10,7 +10,7 @@
 
 <##########################################################################
 # Project: TPS Library
-# Function: xit-gracefully
+# Function: Exit-gracefully
 # Author: Arpan - arpan@thephotostudio.com.au
 # Date: 14/10/2020
 # Description: Exit a program
@@ -30,11 +30,39 @@
 function exit-gracefully($exit_code)
 {
    Remove-Variable -ErrorAction Ignore SESSIONS, SESSION_DATA, Headers, ERROR_THRESHOLD ,ERROR_COUNT
-   write-logfile($("                      xxxxxxxx !!x> an exception occured. Exiting gracefully. Internal error code: " + $exit_code))
-   Write-Output "error " $exit_code
+   logToFile $LOG_ROOT $("xxxxxxxx !!x> an exception occured. Exiting gracefully. Internal error code: " + $exit_code) "ERROR"
    exit $exit_code
 }
 
+<##########################################################################
+# Project: TPS Library
+# Function: Get-Filename
+# Author: Arpan - arpan@thephotostudio.com.au
+# Date: 14/10/2020
+# Description: Exit a program
+#
+# Parameters: 
+# directory - 
+# Return:
+# Null
+#
+##########################################################################
+# Maintenance                            
+# Author:                                
+# Date:                                                              
+# Description:            
+#
+##########################################################################>
+
+Function Get-Filename($directory)
+{
+    [System.reflection.assembly]::LoadWithPartialName("System.windows.forms")|Out-null
+    $OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
+    $OpenFileDialog.initialDirectory = $directory
+    $OpenFileDialog.ShowDialog() | Out-Null
+    $OpenFileDialog.filename
+    
+}
 
 <##########################################################################
 # Project: TPS Library
@@ -46,7 +74,7 @@ function exit-gracefully($exit_code)
 # Parameters: 
 # folderToLog - Folder to create year directory and month file log.              
 # message     - Message to write
-# type        - Type of Log. Convention values: WARNING, ERROR, INFO, SUCESS
+# type        - Type of Log. Convention values: WARNING, ERROR, INFO, SUCCESS
 # Return:
 # Null
 #
@@ -108,17 +136,17 @@ catch {
 }
 
 if ($exceptionObj) {
-    $errormsg = $exceptionObj.ToString()
+    
     $positionmsg = $exceptionObj.InvocationInfo.PositionMessage
     $exception = $exceptionObj.Exception.message
+ #   $errormsg = $exceptionObj.ToString()    
  #   $stacktrace = $exceptionObj.ScriptStackTrace
  #   $failingline = $exceptionObj.InvocationInfo.Line
  #   $pscommandpath = $exceptionObj.InvocationInfo.PSCommandPath
  #   $failinglinenumber = $exceptionObj.InvocationInfo.ScriptLineNumber
-#    $scriptname = $exceptionObj.InvocationInfo.ScriptName
+ #   $scriptname = $exceptionObj.InvocationInfo.ScriptName
 
    $message +=  " `n" + "ERROR details: " + $exception + " `n" + $positionmsg
-
 
    ## NEED TO SEND EMAIL HERE   
 
@@ -134,7 +162,7 @@ $logstring | Out-File $fileToLog -Append
 
 <##########################################################################
 # Project: TPS Library
-# File: getMystratusSessionStatus
+# Function: getMystratusSessionStatus
 # Author: Diego Bueno - diego@thephotostudio.com.au
 # Date: 02/10/2020
 # Description: Get session status of specific directory 
@@ -246,7 +274,7 @@ function getMystratusSessionStatus {
 
 <##########################################################################
 # Project: TPS Library
-# File: getSizeFolder
+# Function: getSizeFolder
 # Author: Diego Bueno - diego@thephotostudio.com.au
 # Date: 02/10/2020
 # Description: Get the size of directory in MB
@@ -274,7 +302,7 @@ function getSizeFolder
 
 <##########################################################################
 # Project: TPS Library
-# File: getSessionArchivedInDisk
+# Function: getSessionArchivedInDisk
 # Author: Diego Bueno - diego@thephotostudio.com.au
 # Date: 14/10/2020
 # Description: Get list of directories and convert to Session data type
@@ -364,7 +392,7 @@ function getSessionArchivedInDisk {
 
 <##########################################################################
 # Project: TPS Library
-# File: findItemInArrayOfObjects
+# Function: findItemInArrayOfObjects
 # Author: Diego Bueno - diego@thephotostudio.com.au
 # Date: 14/10/2020
 # Description: find an Item in Array Of Objects using its string
@@ -412,4 +440,154 @@ function findItemInArrayOfObjects {
 
 return $position 
 
+}
+
+
+
+<##########################################################################
+# Project: TPS Library
+# Function: updateMyStratusSessionStatus
+# Author: Diego Bueno - diego@thephotostudio.com.au
+# Date: 19/10/2020
+# Description: Update the status of a Session on My Stratus by API
+#
+# Parameters: 
+# session - Session to be updated
+# newStatus - The new status to be set
+# notes - Notes to be added to the session
+#
+# Return:
+# null
+#
+##########################################################################
+# Maintenance                            
+# Author:                                
+# Date:                                                              
+# Description:            
+#
+##########################################################################>
+
+function updateMyStratusSessionStatus {
+
+    Param(
+        [parameter(Mandatory = $true)]
+        [String]
+        $sessionNumber,
+        [parameter(Mandatory = $true)]
+        [String]
+        $newStatus,
+        [parameter(Mandatory = $false)]
+        [String]
+        $newNotes
+    )
+
+    $api_url = "https://api.thephotostudio.com.au/sp/Session?action=sessionnumber&value="
+    $Headers = @{"x-api-key" = "1zpqpC9Gk57wCXVB46UKkv4sWFRzxc99jRz9RND8" }
+    $newStatusKey = getStatusKey($newStatus); 
+    #"00-999-10130" = "Secondary Archive Pending"
+    #"00-000-10058" = "Archived & Purged"  
+
+    if (!$newStatusKey) {
+        logToFile $LOG_ROOT $("New status invalid for MyStratus") "ERROR"
+        exit-gracefully(105);  
+    }
+
+    # retrieving the session to My Stratus
+    try
+    {    
+        $myStratusSession = Invoke-RestMethod -Uri $($api_url + $sessionNumber ) -Headers $Headers
+        logToFile $LOG_ROOT $("Retrieved session " + $sessionNumber + " from My Stratus via API") "INFO"
+    }
+    catch [System.IO.IOException]
+    {
+        logToFile $LOG_ROOT $("Could not retrieved session " + $sessionNumber + " from My Stratus via API") "ERROR"
+        exit-gracefully(105);
+    }
+
+    # updating new status 
+    try {
+        
+        logToFile $LOG_ROOT $("Updating session " + $myStratusSession.SessionNumber + " from status " + $myStratusSession.StatusDescription `
+                                + " to new status " + $newStatus)   "INFO"
+
+        if ($myStratusSession.StatusDescription.Trim() -ne  $newStatus.Trim())
+        {
+            try {
+
+                $myStratusSession.StatusKey = $newStatusKey;
+                $myStratusSession.StatusDescription = $newStatus;
+                $myStratusSession.Notes = $newNotes; 
+
+                $result = Invoke-RestMethod -Method 'Put' -Uri $($api_url + $sessionNumber ) -Headers $Headers -Body $($myStratusSession | ConvertTo-Json)
+  
+            }
+            catch [System.Net.WebException] { 
+
+                if ($_.Exception.Response.StatusCode.value__ -ne 200) {
+                    logToFile $LOG_ROOT $("Couldn't update " + $sessionNumber + " to its new status. Please update manually" `
+                    + "\n Http status: " + $_.Exception.Response.StatusCode.value__ `
+                    + "\n Description: " + $_.Exception.Response.StatusDescription) "ERROR"
+                }
+            }
+            catch { 
+                logToFile $LOG_ROOT $("Couldn't update " + $sessionNumber + " to its new status. Please update manually") "ERROR" -exceptionObj $_ 
+            }
+        }
+    }
+    catch {
+        logToFile $LOG_ROOT $("Couldn't update " + $sessionNumber + " session status on My Stratus. Please update manually") "ERROR" -exceptionObj $_ 
+    }
+}
+
+
+
+<##########################################################################
+# Project: TPS Library
+# Function: getStatusKey
+# Author: Diego Bueno - diego@thephotostudio.com.au
+# Date: 19/10/2020
+# Description: Update the status of a Session on My Stratus by API
+#
+# Parameters: 
+# session - Session to be updated
+# newStatus - The new status to be set
+# notes - Notes to be added to the session
+#
+# Return:
+# null
+#
+##########################################################################
+# Maintenance                            
+# Author:                                
+# Date:                                                              
+# Description:            
+#
+##########################################################################>
+
+function getStatusKey() {
+
+    Param(
+        [parameter(Mandatory = $true)]
+        [String]
+        $searchedDescription)
+
+    $api_url_statuses = "https://api.thephotostudio.com.au/sp/SessionStatus";
+    $Headers = @{"x-api-key" = "1zpqpC9Gk57wCXVB46UKkv4sWFRzxc99jRz9RND8" };
+    $statusKey = $null;
+
+    try {
+        $session_data = Invoke-RestMethod -Uri $($api_url_statuses ) -Headers $Headers
+        logToFile $LOG_ROOT ("Retrieving statuses... ") "INFO"
+
+        for ($i = 0; $i -lt $session_data.length; $i++) {
+            if ($session_data[$i].Description.Trim() -eq $searchedDescription.Trim() ) {
+                $statusKey = $session_data[$i].Key;
+            }
+        }
+    }
+    catch {
+        logToFile $LOG_ROOT $("Couldn't retrieve list of statuses from My Stratus") "ERROR" -exceptionObj $_ 
+    }
+    
+    return($statusKey);
 }

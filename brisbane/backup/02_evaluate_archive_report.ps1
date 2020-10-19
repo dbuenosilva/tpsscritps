@@ -54,16 +54,6 @@ for ($i = 0; $i -lt $result.length; $i++) {
     }
 } 
 
-# report external HD
-#for ($i = 0; $i -lt $archive.length; $i++) {
-#    try {
-#        Add-Content $file $( $archive[$i].sessionNumber + "," + $archive[$i ].status + "," + $archive[$i ].path + "," + $archive[$i ].folder + "," + $archive[$i ].numberOfFiles            )
-#    }
-#    catch [System.Net.WebException] {
-#        logToFile $LOG_ROOT ("Session " + $result[$i].Session + " did not add in file " + $file ) "ERROR"
-#    }
-#} 
-
 if ($result.length -eq 0) {
     if ($filter) {
         $message = "with filter " + $filter
