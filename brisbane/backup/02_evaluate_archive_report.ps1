@@ -1,6 +1,6 @@
 ﻿<##########################################################################
 # Project: Backup
-# File: evaluate_archive.ps1
+# File: 02_evaluate_archive_report.ps1
 # Author: Diego Bueno - diego@thephotostudio.com.au
 # Date: 02/10/2020
 # Description: Get sessions with status "Archive Pending" and compare with
@@ -18,11 +18,11 @@
 
 $LOG_ROOT = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\retrieving-stratus-status\";
 $imageData    = "\\192.168.33.46\imagedata\01_CLIENT_FOLDER\";
-$externalHD   = "H:\Archives" #"G:\Archives\" #"H:\Archives" #"E:\" #  "F:\Brisbane\"
+$externalHD   = "E:\Archives"
 $filter = "Archive Pending";
-$file   ='C:\archiveworks\Session_Status_Report_' + $filter.Replace(' ','_') + '_' +  (Get-Date -format "yyyyMMdd-hhmm") + ".csv"
+$file   ='C:\archiveworks\Session_Status_Report_' + $filter.Replace(' ','_') + '_' +  (Get-Date -format "yyyyMMdd-hhmm") + ".csv";
 
-logToFile $LOG_ROOT "Starting evaluate_archive ******************************************************"
+logToFile $LOG_ROOT "Starting 02_evaluate_archive_report ******************************************************"
 
 logToFile $LOG_ROOT "Retrieving sessions from External HardDrive"
 $archive = $(getSessionArchivedInDisk $externalHD $LOG_ROOT)

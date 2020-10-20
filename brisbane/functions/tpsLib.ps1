@@ -160,6 +160,100 @@ $logstring | Out-File $fileToLog -Append
 
 }
 
+
+<##########################################################################
+# Project: TPS Library
+# Function: getMystratusSession
+# Author: Diego Bueno - diego@thephotostudio.com.au
+# Date: 20/10/2020
+# Description: Get session details of specific session
+#
+# Parameters: 
+# sessionToSearch - Directory to search a valid sessions           
+# path - Path to evaluate files
+# folder - Folder to evaluate files
+# logFile - log File
+#
+# Return:
+# sessionToReturn - array with Session objects
+#
+##########################################################################
+# Maintenance                            
+# Author:                                
+# Date:                                                              
+# Description:
+#
+##########################################################################>
+
+function getMystratusSession { 
+
+    Param(
+        [parameter(Mandatory = $true)]
+        [String]
+        $sessionToSearch,
+        [parameter(Mandatory = $true)]
+        [String]
+        $path,
+        [parameter(Mandatory = $true)]
+        [String]
+        $folder,        
+        [parameter(Mandatory = $false)]
+        [String]
+        $logFile
+    )    
+
+    if ($logFile) {
+        $LOG_FILE = $logFile  
+    }
+    else {
+        $LOG_FILE = $PSScriptRoot
+    }
+
+    logToFile $LOG_FILE "Called for getMystratusSession function"
+    
+    $api_url = "https://api.thephotostudio.com.au/sp/Session?action=sessionnumber&value="
+    $Headers = @{"x-api-key" = "1zpqpC9Gk57wCXVB46UKkv4sWFRzxc99jRz9RND8" }
+
+    logToFile $LOG_FILE ("Querying session: " + $sessionToSearch)
+
+    $session = $null;
+
+    try {
+        $session_data = Invoke-RestMethod -Uri $($api_url + $sessionToSearch ) -Headers $Headers
+        logToFile $LOG_FILE ("Session Status: " + $session_data.StatusDescription)        
+
+        $session = [Session]::new()
+        $session.sessionNumber = $session_data.SessionNumber
+        $session.status = $session_data.StatusDescription
+        $session.path = $path
+        $session.folder = $folder
+        $session.numberOfEditsFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Edits") -Recurse -File | Measure-Object).Count
+        $session.numberOfProductionsFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumberh + "_Productions") -Recurse -File | Measure-Object).Count
+        $session.numberOfSelectsFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Selects") -Recurse -File | Measure-Object).Count
+        $session.numberOfUploadsFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Uploads*") -Recurse -File | Measure-Object).Count
+        $session.numberOfWorkingFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Working") -Recurse -File | Measure-Object).Count
+        $session.statisticsDate = (Get-Date)
+    }
+    catch [System.Net.WebException] {
+        logToFile $LOG_FILE $("Session " + $sessionToSearch + " not found ") "WARNING"
+
+        $session = [Session]::new()
+        $session.sessionNumber = $sessionToSearch 
+        $session.path = $path
+        $session.folder = $folder        
+        $session.status = "Session not found on Stratus"
+    }
+    catch {
+        logToFile $LOG_ROOT $("Fail requesting session " + $sessionToSearch) "ERROR" -exceptionObj $_                 
+    }
+     
+    logToFile $LOG_FILE "End of getMystratusSession function execution..."    
+
+    return($session)
+}
+
+
+
 <##########################################################################
 # Project: TPS Library
 # Function: getMystratusSessionStatus
