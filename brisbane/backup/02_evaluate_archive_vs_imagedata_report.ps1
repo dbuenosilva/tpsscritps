@@ -1,6 +1,6 @@
 ﻿<##########################################################################
 # Project: Backup
-# File: evaluate_archive.ps1
+# File: 02_evaluate_archive_vs_imagedata_report.ps1
 # Author: Diego Bueno - diego@thephotostudio.com.au
 # Date: 02/10/2020
 # Description: Get sessions with status "Archive Pending" and compare with
@@ -16,19 +16,19 @@
 # importing classes and functions
 . C:\workspace\scripts\brisbane\functions\tpsLib.ps1
 
-$LOG_ROOT = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\retrieving-stratus-status\";
+$LOG_ROOT = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\02-evaluate-archive-vs-imagedata-report\";
 $imageData    = "\\192.168.33.46\imagedata\01_CLIENT_FOLDER\";
-$externalHD   = "H:\Archives" #"G:\Archives\" #"H:\Archives" #"E:\" #  "F:\Brisbane\"
+$externalHD   = "E:\Archives"
 $filter = "Archive Pending";
-$file   ='C:\archiveworks\Session_Status_Report_' + $filter.Replace(' ','_') + '_' +  (Get-Date -format "yyyyMMdd-hhmm") + ".csv"
+$file   ='C:\archiveworks\02_evaluate_archive_vs_imagedata_report_' + $filter.Replace(' ','_') + '_' +  (Get-Date -format "yyyyMMdd-hhmm") + ".csv";
 
-logToFile $LOG_ROOT "Starting evaluate_archive ******************************************************"
+logToFile $LOG_ROOT "Starting 02_evaluate_archive_vs_imagedata_report ******************************************************"
 
 logToFile $LOG_ROOT "Retrieving sessions from External HardDrive"
 $archive = $(getSessionArchivedInDisk $externalHD $LOG_ROOT)
 
 logToFile $LOG_ROOT "Retrieving sessions from ImageData"
-$result = $(getMystratusSessionStatus $imageData $filter $LOG_ROOT);
+$result = $(getListOfMystratusSessions $imageData $filter $LOG_ROOT);
 
 # report itens found in imageData and archive
 for ($i = 0; $i -lt $result.length; $i++) {
@@ -65,4 +65,4 @@ if ($archive.length -eq 0) {
     logToFile $LOG_ROOT ("No sessions found in " + $externalHD ) "WARNING"    
 }
 
-logToFile $LOG_ROOT "Ending evaluate_archive ******************************************************" "INFO"
+logToFile $LOG_ROOT "Ending 02_evaluate_archive_vs_imagedata_report ******************************************************" "INFO"

@@ -203,10 +203,7 @@ function getMystratusSession {
     )    
 
     if ($logFile) {
-        $LOG_FILE = $logFile  
-    }
-    else {
-        $LOG_FILE = $PSScriptRoot
+        $LOG_FILE = $logFile
     }
 
     logToFile $LOG_FILE "Called for getMystratusSession function"
@@ -300,7 +297,7 @@ function getMystratusSession {
 
 <##########################################################################
 # Project: TPS Library
-# Function: getMystratusSessionStatus
+# Function: getListOfMystratusSessions
 # Author: Diego Bueno - diego@thephotostudio.com.au
 # Date: 02/10/2020
 # Description: Get session status of specific directory 
@@ -321,23 +318,19 @@ function getMystratusSession {
 #
 ##########################################################################>
 
-function getMystratusSessionStatus { 
+function getListOfMystratusSessions { 
 
     Param(
         [parameter(Mandatory = $true)]
         [String]
         $directoryToSearch,
-        [parameter(Mandatory = $false)]
+        [parameter(Mandatory = $true)]
         [String]
         $filter,
         [parameter(Mandatory = $false)]
         [String]
         $logFile
     )    
-
-    if ($directoryToSearch) {
-        $SMD_ROOT = $directoryToSearch
-    }
 
     if ($logFile) {
         $LOG_FILE = $logFile  
@@ -346,15 +339,13 @@ function getMystratusSessionStatus {
         $LOG_FILE = $PSScriptRoot
     }
 
-    logToFile $LOG_FILE "Called for getMystratusSessionStatus function"
+    logToFile $LOG_FILE "Called for getListOfMystratusSessions function"
     
-    $api_url = "https://api.thephotostudio.com.au/sp/Session?action=sessionnumber&value="
-    $Headers = @{"x-api-key" = "1zpqpC9Gk57wCXVB46UKkv4sWFRzxc99jRz9RND8" }
     $sessionToReturn = @()
 
     ## Retrieving list of directories
     Try {
-        $sessions = Get-ChildItem $SMD_ROOT 
+        $sessions = Get-ChildItem $directoryToSearch 
         logToFile $LOG_FILE ("Found " + $sessions.Length + " sessions") "INFO" 
     }
     catch [System.Exception] {
@@ -371,41 +362,14 @@ function getMystratusSessionStatus {
             $sessionName     = $sessions[$i].Name.Substring(0, $sessions[$i].Name.IndexOf('_'))
             logToFile $LOG_FILE ("Querying session: " + $sessionName)
 
-            $session = $null;
-
-            try {
-                $session_data = Invoke-RestMethod -Uri $($api_url + $sessionName ) -Headers $Headers
-                logToFile $LOG_FILE ("Session Status: " + $session_data.StatusDescription)        
-
-                $session = [Session]::new()
-                $session.sessionNumber = $sessionName
-                $session.status = $session_data.StatusDescription
-                $session.path   = $sessions[$i].FullName  
-                $session.folder = $sessions[$i].Name
-                $session.numberOfEditsFiles       = (Get-ChildItem $($sessions[$i].FullName + "\" +$sessionName + "_Edits") -Recurse -File | Measure-Object).Count
-                $session.numberOfProductionsFiles = (Get-ChildItem $($sessions[$i].FullName + "\" +$sessionName + "_Productions") -Recurse -File | Measure-Object).Count
-                $session.numberOfSelectsFiles     = (Get-ChildItem $($sessions[$i].FullName + "\" +$sessionName + "_Selects") -Recurse -File | Measure-Object).Count
-                $session.numberOfUploadsFiles     = (Get-ChildItem $($sessions[$i].FullName + "\" +$sessionName + "_Uploads*") -Recurse -File | Measure-Object).Count
-                $session.numberOfWorkingFiles     = (Get-ChildItem $($sessions[$i].FullName + "\" +$sessionName + "_Working") -Recurse -File | Measure-Object).Count
-                $session.statisticsDate           = (Get-Date)
-            }
-            catch [System.Net.WebException] {
-                logToFile $LOG_FILE $("Session " + $sessionName + " not found ") "WARNING"
-
-                $session = [Session]::new()
-                $session.sessionNumber = $sessionName 
-                $session.status  = "Session not found on Stratus"
-            }
-            catch {
-                    logToFile $LOG_ROOT $("Fail requesting session " + $result[$i].sessionNumber) "ERROR" -exceptionObj $_                 
-            }
+            $session = getMystratusSession -sessionToSearch $sessionName -path $directoryToSearch -folder $sessions[$i].Name
           
             if ( $session -and (! $filter -or ( $filter -and $filter.Contains($session.status)))) {
                 $sessionToReturn += $session;
             }            
         }
     } 
-    logToFile $LOG_FILE "End of getMystratusSessionStatus function execution..."    
+    logToFile $LOG_FILE "End of getListOfMystratusSessions function execution..."    
 
     return($sessionToReturn)
 }

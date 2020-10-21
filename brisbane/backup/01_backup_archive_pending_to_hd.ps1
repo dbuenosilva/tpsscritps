@@ -1,136 +1,87 @@
 ﻿<##########################################################################
 # Project: Backup
-# File: backup_edits_folders.ps1
+# File: 01_backup_archive_pending_to_hd.ps1
 # Author: Diego Bueno - diego@thephotostudio.com.au
-# Date: 02/10/2020
-# Description: Copy files JPG from EDIT folders to external Hard Drive                
-#
+# Date: 21/10/2020
+# Description: Get sessions with status "Archive Pending" and copy to
+#              an external hard disk to be use as archive 
 ##########################################################################
 # Maintenance                            
 # Author:                                
 # Date:                                                              
 # Description:            
 #
-##########################################################################
-WARNING: You're not authorized to open this file. Close it Immediately.
-##########################################################################
+##########################################################################>
 
-README: 
-------
-This script runs in context to the BRANON.
-All the locations are relative to this server. If you don't know what this server is
-you probably shouldn't be reading this/ making changes to this file (BTW: Do not make any change
-even if you know that BRANON is). It will stop the backup process.
+# importing classes and functions
+. C:\workspace\scripts\brisbane\functions\tpsLib.ps1
 
-If you're familiar with PS it's a fairly simple and straightforward script.
+$LOG_ROOT = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\01-backup-archive-pending-to-hd\";
+$imageData    = "\\192.168.33.46\imagedata\01_CLIENT_FOLDER\diego";
+$externalHD   = "C:\archive"
+$filter = "Archive Pending";
 
-PURPOSE:
--------
-It's purpose is to automat(/g)ically grab screen res images from brisbane client folder 
-and send it to External HD backup.
+logToFile $LOG_ROOT "Starting 01_backup_archive_pending_to_hd ******************************************************"
 
+logToFile $LOG_ROOT "Retrieving sessions from ImageData"
+$result = $(getListOfMystratusSessions $imageData $filter $LOG_ROOT);
 
-TROUBLESHOOTING:
----------------
->If you came here because the script wasn't working. The Execution policy was set to "Bypass" on the server.
-Keep it that way. Maybe the update or something changed the execution policy.
-TIP: Set-Execution Policy Bypass
+# report itens found in imageData and archive
+for ($i = 0; $i -lt $result.length; $i++) {
 
->Maybe the TASK SCHEDULER in the server is disabled or has crashed?
-#>
+    try {
 
-$SMD_ROOT = "\\192.168.254.5\imagedata\01_CLIENT_FOLDER\*_??\*_Edits\*.jpg" 
-$SMD_DEST = "F:\EDIT_BACKUPS\" ## external HD
-$LOG_ROOT = "\\192.168.254.5\IT\AutoScripts\Logs\PowerShell\brisbane_edits_backup\"
-$LOG_ROOT = $($LOG_ROOT + (Get-Date).Year + "\" )
-
-# Evaluating LOG directory
-try {
-    if (!(Test-path -Path $LOG_ROOT)) {
-        New-Item -ItemType Directory $LOG_ROOT;
-    }
-}
-catch [System.IO.IOException] {
-    Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | evaluanting LOG directory! ")    
-    exit exit-gracefully(102)
-}
-
-# Evaluating LOG file
-$LOG_FILE = $($LOG_ROOT + (Get-Culture).DateTimeFormat.GetAbbreviatedMonthName((Get-Date).month) + ".log")
-try {
-    if (!(Test-path $LOG_FILE -PathType Leaf)) {
-        New-Item -ItemType File $LOG_FILE;
-    }
-}
-catch [System.IO.IOException] {
-    Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | evaluanting LOG file! ")        
-    exit exit-gracefully(102)
-}
-
-#add year & month to the Destination URL
-$SMD_DEST = $($SMD_DEST + (Get-Date).Year + "\" + (Get-Culture).DateTimeFormat.GetAbbreviatedMonthName((Get-Date).month))
-
-Add-Content $($LOG_FILE) $( "" + (Get-Date) + "| START COPY TASK | ******************************************************   ")
-
-Try {
-    $SMD = Get-ChildItem $SMD_ROOT 
-}
-catch [System.Exception] {
-    Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | Could not get list of directories. Get-ChildItem failed execution! ")
-}
-
-if (!(Test-path -Path $SMD_DEST)) {
-    Add-Content $($LOG_FILE ) $(   "" + (Get-Date) + "| WARNING | Directory " + $SMD_DEST + " does not exist! Creating...")
-    New-Item -ItemType Directory $SMD_DEST;
-}
-
-for ($i = 0; $i -lt $SMD.Length; $i++) {
-    $image = $SMD[$i];
-
-    ## Creating EDIT_ folder
-    Try { 
-        $SMD_DEST_EDIT = $SMD_DEST + "\" + $image.Directory.Name 
-        if ( ! (Test-path -Path $SMD_DEST_EDIT ) ) {
-            New-Item -ItemType Directory $SMD_DEST_EDIT
+        $directoryToCopy = $($imageData  + "\" + $result[$i].folder)
+        if (!(Test-path -Path $directoryToCopy)) {
+            logToFile $LOG_ROOT $("Fail to copying session " + $result[$i].sessionNumber + " to External HardDrive " + $externalHD `
+                                + "`nPath " + $directoryToCopy + " is not valid" ) "ERROR"
         }
-
-    }
-    catch [System.Exception] {
-        Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | to create album edit folder for " + $image.FullName)
-        continue
-    }
-
-    ## Checking if file exist
-    if (Test-path ($SMD_DEST_EDIT + "\" + $image.Name) -PathType Leaf) {
-        ## Comparing version of files
-        if ( $image.LastWriteTimeUtc -eq (Get-ItemProperty -Path ($SMD_DEST_EDIT + "\" + $image.Name)).LastWriteTimeUtc ) {
-          ##no longer need to log it  Add-Content $($LOG_FILE ) $( "" + $DATE + "| Skipped file: " + $image.FullName)
-            continue         
-        } 
         else {
-            ## Copy keeping both files
-            Try { 
-                $DestinationFile = $SMD_DEST_EDIT + "\" + $image.BaseName + "_" + $image.LastWriteTime.Year + $image.LastWriteTime.Month + $image.LastWriteTime.Day + ".jpg"
-                Copy-Item $image -Destination $DestinationFile -Force
-                Add-Content $($LOG_FILE ) $("" + (Get-Date) + "| Re-copied | file: " + $image.FullName)
+            logToFile $LOG_ROOT $("Copying session " + $result[$i].sessionNumber + " to External HardDrive " + $externalHD) "INFO"
+            
+$debug = ""
+            
+            # creating directory on HD
+            try {
+                $sessionFolderInHD = $($externalHD + "\" + $result[$i].folder)
+                if (!(Test-path -Path $sessionFolderInHD) ) {
+                    New-Item -ItemType Directory $sessionFolderInHD;
+                }
             }
-            catch [System.Exception] {
-                Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | to re-copy file " + $image.FullName)
-                continue
+            catch [System.IO.IOException] {
+                Write-Output $(  "" + (Get-Date) + " ERROR creating directory " + $sessionFolderInHD);
+                exit exit-gracefully(102);
+            }
+            catch {
+                logToFile $LOG_ROOT $("Unknown error") "ERROR" -exceptionObj $_ 
+            }  
+
+            # copying Edits
+            if ( $result[$i].numberOfEditsFiles -gt 0 ) {
+                Copy-Item -Path  $($directoryToCopy + "\" + $result[$i].sessionNumber + "_Edits") -Destination $sessionFolderInHD -Recurse -Force
+            }
+
+            # copying Selects
+            if ( $result[$i].numberOfEditsFiles -gt 0 ) {
+                Copy-Item -Path  $($directoryToCopy + "\" + $result[$i].sessionNumber + "_Selects") -Destination $sessionFolderInHD -Recurse -Force
+            }
+
+            # copying Productions
+            if ( $result[$i].numberOfEditsFiles -gt 0 ) {
+                Copy-Item -Path  $($directoryToCopy + "\" + $result[$i].sessionNumber + "_Productions") -Destination $sessionFolderInHD -Recurse -Force
             }
         }
     }
-    else { 
-        ## Copying a new file
-        Try { 
-            Copy-Item $image $SMD_DEST_EDIT -Force
-            Add-Content $($LOG_FILE ) $("" + (Get-Date) + "| Copied | file: " + $image.FullName)
-        }
-        catch [System.Exception] {
-            Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | to copy file " + $image.FullName)
-            continue
-        }            
+    catch {
+        logToFile $LOG_ROOT $("Unknown error") "ERROR" -exceptionObj $_ 
+    }
+} 
 
-    }    
+if ($result.length -eq 0) {
+    if ($filter) {
+        $message = "with filter " + $filter
+    } 
+    logToFile $LOG_ROOT ("No sessions found " + $message + " in " + $imageData )  "WARNING"    
 }
-Add-Content $($LOG_FILE ) $( "" + (Get-Date) + "| END COPY TASK | ***************************")
+
+logToFile $LOG_ROOT "Ending 01_backup_archive_pending_to_hd ******************************************************" "INFO"

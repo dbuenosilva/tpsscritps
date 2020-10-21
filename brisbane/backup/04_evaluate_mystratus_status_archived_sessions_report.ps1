@@ -1,10 +1,10 @@
 ﻿<##########################################################################
 # Project: Backup
-# File: 02_evaluate_archive_report.ps1
+# File: 04_evaluate_mystratus_status_archived_sessions_report.ps1
 # Author: Diego Bueno - diego@thephotostudio.com.au
-# Date: 02/10/2020
-# Description: Get sessions with status "Archive Pending" and compare with
-#              the disk archive exporting a report CSV
+# Date: 21/10/2020
+# Description: Evaluate if all session in archive External Hard Drive are
+#              with status "Archive ???" and export result to a report CSV
 ##########################################################################
 # Maintenance                            
 # Author:                                
@@ -16,19 +16,18 @@
 # importing classes and functions
 . C:\workspace\scripts\brisbane\functions\tpsLib.ps1
 
-$LOG_ROOT = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\retrieving-stratus-status\";
-$imageData    = "\\192.168.33.46\imagedata\01_CLIENT_FOLDER\";
+$LOG_ROOT = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\04-evaluate-mystratus-status-archived-sessions-report\";
 $externalHD   = "E:\Archives"
-$filter = "Archive Pending";
-$file   ='C:\archiveworks\Session_Status_Report_' + $filter.Replace(' ','_') + '_' +  (Get-Date -format "yyyyMMdd-hhmm") + ".csv";
+$desireStatus = "Secondary Archive Pending";
+$file   ='C:\archiveworks\04-evaluate-mystratus-status-archived-sessions-report_' + $filter.Replace(' ','_') + '_' +  (Get-Date -format "yyyyMMdd-hhmm") + ".csv";
 
-logToFile $LOG_ROOT "Starting 02_evaluate_archive_report ******************************************************"
+logToFile $LOG_ROOT "Starting 04-evaluate-mystratus-status-archived-sessions-report ******************************************************"
 
 logToFile $LOG_ROOT "Retrieving sessions from External HardDrive"
 $archive = $(getSessionArchivedInDisk $externalHD $LOG_ROOT)
 
 logToFile $LOG_ROOT "Retrieving sessions from ImageData"
-$result = $(getMystratusSessionStatus $imageData $filter $LOG_ROOT);
+$result = $(getListOfMystratusSessions $imageData $filter $LOG_ROOT);
 
 # report itens found in imageData and archive
 for ($i = 0; $i -lt $result.length; $i++) {
@@ -65,4 +64,4 @@ if ($archive.length -eq 0) {
     logToFile $LOG_ROOT ("No sessions found in " + $externalHD ) "WARNING"    
 }
 
-logToFile $LOG_ROOT "Ending evaluate_archive ******************************************************" "INFO"
+logToFile $LOG_ROOT "Ending 04-evaluate-mystratus-status-archived-sessions-report ******************************************************" "INFO"
