@@ -257,7 +257,7 @@ function getMystratusSession {
         }            
 
         if (Test-path -Path $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Uploads")) {
-            $session.numberOfUploadsFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Uploads*") -Recurse -File | Measure-Object).Count
+            $session.numberOfUploadsFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Uploads") -Recurse -File | Measure-Object).Count
         }
         else {
             $session.numberOfUploadsFiles = 0;
