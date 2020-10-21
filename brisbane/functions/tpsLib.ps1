@@ -227,11 +227,52 @@ function getMystratusSession {
         $session.status = $session_data.StatusDescription
         $session.path = $path
         $session.folder = $folder
-        $session.numberOfEditsFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Edits") -Recurse -File | Measure-Object).Count
-        $session.numberOfProductionsFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumberh + "_Productions") -Recurse -File | Measure-Object).Count
-        $session.numberOfSelectsFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Selects") -Recurse -File | Measure-Object).Count
-        $session.numberOfUploadsFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Uploads*") -Recurse -File | Measure-Object).Count
-        $session.numberOfWorkingFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Working") -Recurse -File | Measure-Object).Count
+        $notfoundMessage = " did not found for session " + $session_data.SessionNumber
+
+        if (Test-path -Path $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Edits")) {
+            $session.numberOfEditsFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Edits") -Recurse -File | Measure-Object).Count
+        }
+        else {
+            $session.numberOfEditsFiles = 0;
+            logToFile $LOG_ROOT $("Folder " + $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Edits") `
+                                + $notfoundMessage) "WARNING"
+        }
+
+        if (Test-path -Path $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Productions")) {
+            $session.numberOfProductionsFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumberh + "_Productions") -Recurse -File | Measure-Object).Count
+        }
+        else {
+            $session.numberOfProductionsFiles = 0;
+            logToFile $LOG_ROOT $("Folder " + $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Productions") `
+                                + $notfoundMessage) "WARNING"
+        }            
+
+        if (Test-path -Path $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Selects")) {
+            $session.numberOfSelectsFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Selects") -Recurse -File | Measure-Object).Count
+        }
+        else {
+            $session.numberOfSelectsFiles = 0;
+            logToFile $LOG_ROOT $("Folder " + $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Selects") `
+                                + $notfoundMessage) "WARNING"
+        }            
+
+        if (Test-path -Path $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Uploads")) {
+            $session.numberOfUploadsFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Uploads*") -Recurse -File | Measure-Object).Count
+        }
+        else {
+            $session.numberOfUploadsFiles = 0;
+            logToFile $LOG_ROOT $("Folder " + $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Uploads") `
+                                + $notfoundMessage) "WARNING"
+        }            
+
+        if (Test-path -Path $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Working")) {
+            $session.numberOfWorkingFiles = (Get-ChildItem $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Working") -Recurse -File | Measure-Object).Count
+        }
+        else {
+            $session.numberOfWorkingFiles = 0;
+            logToFile $LOG_ROOT $("Folder " + $($path + "\" + $folder + "\" + $session_data.SessionNumber + "_Working") `
+                                + $notfoundMessage) "WARNING"
+        }            
         $session.statisticsDate = (Get-Date)
     }
     catch [System.Net.WebException] {
@@ -243,6 +284,9 @@ function getMystratusSession {
         $session.folder = $folder        
         $session.status = "Session not found on Stratus"
     }
+    catch [System.Management.Automation.ItemNotFoundException] { # input path not found
+        logToFile $LOG_ROOT $("Fail to look into folders of session " + $sessionToSearch) "ERROR" -exceptionObj $_                 
+    }     
     catch {
         logToFile $LOG_ROOT $("Fail requesting session " + $sessionToSearch) "ERROR" -exceptionObj $_                 
     }
