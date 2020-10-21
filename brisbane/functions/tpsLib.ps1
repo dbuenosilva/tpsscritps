@@ -129,7 +129,7 @@ try {
 }
 catch [System.IO.IOException] {
     Write-Output $(  "" + (Get-Date) + " ERROR evaluanting LOG file " + $fileToLog)        
-    exit exit-gracefully(102);
+    exit-gracefully(102);
 }
 catch {
     logToFile $LOG_ROOT $("Unknown error") "ERROR" -exceptionObj $_ 
