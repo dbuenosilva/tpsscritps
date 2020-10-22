@@ -360,13 +360,20 @@ function getListOfMystratusSessions {
         if ( $sessions[$i].PSIsContainer -and $sessions[$i].Name.Contains("_") ) {
 
             $sessionName     = $sessions[$i].Name.Substring(0, $sessions[$i].Name.IndexOf('_'))
-            logToFile $LOG_FILE ("Querying session: " + $sessionName)
 
-            $session = getMystratusSession -sessionToSearch $sessionName -path $directoryToSearch -folder $sessions[$i].Name
-          
-            if ( $session -and (! $filter -or ( $filter -and $filter.Contains($session.status)))) {
-                $sessionToReturn += $session;
-            }            
+            if ($sessionName) {
+
+                logToFile $LOG_FILE ("Querying session: " + $sessionName)
+
+                $session = getMystratusSession -sessionToSearch $sessionName -path $directoryToSearch -folder $sessions[$i].Name
+              
+                if ( $session -and (! $filter -or ( $filter -and $filter.Contains($session.status)))) {
+                    $sessionToReturn += $session;
+                }            
+            }
+            else {
+                logToFile $LOG_FILE $("Could not get session name of directory " + $sessions[$i].Name) "ERROR"
+            }
         }
     } 
     logToFile $LOG_FILE "End of getListOfMystratusSessions function execution..."    

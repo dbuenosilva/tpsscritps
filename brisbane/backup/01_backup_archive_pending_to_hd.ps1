@@ -16,9 +16,9 @@
 # importing classes and functions
 . C:\workspace\scripts\brisbane\functions\tpsLib.ps1
 
-$LOG_ROOT = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\01-backup-archive-pending-to-hd\";
-$imageData    = "\\192.168.33.46\imagedata\01_CLIENT_FOLDER\diego";
-$externalHD   = "C:\archive"
+$LOG_ROOT = "\\192.168.254.5\IT\AutoScripts\Logs\PowerShell\01-backup-archive-pending-to-hd\";
+$imageData    = "\\192.168.254.5\imagedata\01_CLIENT_FOLDER";
+$externalHD   = "H:\Archives"
 $filter = "Archive Pending";
 
 logToFile $LOG_ROOT "Starting 01_backup_archive_pending_to_hd ******************************************************"
@@ -38,9 +38,7 @@ for ($i = 0; $i -lt $result.length; $i++) {
         }
         else {
             logToFile $LOG_ROOT $("Copying session " + $result[$i].sessionNumber + " to External HardDrive " + $externalHD) "INFO"
-            
-$debug = ""
-            
+                       
             # creating directory on HD
             try {
                 $sessionFolderInHD = $($externalHD + "\" + $result[$i].folder)

@@ -16,9 +16,9 @@
 # importing classes and functions
 . C:\workspace\scripts\brisbane\functions\tpsLib.ps1
 
-$LOG_ROOT = "\\192.168.33.46\IT\AutoScripts\Logs\PowerShell\02-evaluate-archive-vs-imagedata-report\";
-$imageData    = "\\192.168.33.46\imagedata\01_CLIENT_FOLDER\";
-$externalHD   = "E:\Archives"
+$LOG_ROOT = "\\192.168.254.5\IT\AutoScripts\Logs\PowerShell\02-evaluate-archive-vs-imagedata-report\";
+$imageData    = "\\192.168.254.5\imagedata\01_CLIENT_FOLDER";
+$externalHD   = "H:\Archives"
 $filter = "Archive Pending";
 $file   ='C:\archiveworks\02_evaluate_archive_vs_imagedata_report_' + $filter.Replace(' ','_') + '_' +  (Get-Date -format "yyyyMMdd-hhmm") + ".csv";
 
