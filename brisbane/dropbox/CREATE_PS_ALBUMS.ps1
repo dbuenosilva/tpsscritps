@@ -1,4 +1,4 @@
-﻿
+﻿Set-ExecutionPolicy RemoteSigned
 <#
 
 #################################################################################################
@@ -62,8 +62,8 @@ function Wait-ProSelect
 $ERROR_THRESHOLD = 2
 
 
-$FILE_SERVER = "\\192.168.254.5\"
-$DROPBOX_ALBUMS_FOLDER = "\\192.168.33.51\d\Dropbox\CLIENT_VIEWING_IMAGES\Albums\Brisbane"
+$FILE_SERVER = "\\192.168.33.46\"
+$DROPBOX_ALBUMS_FOLDER = "D:\Dropbox\CLIENT_VIEWING_IMAGES\Albums\Brisbane"
 # should always end with a \
 $LOG_ROOT = $($FILE_SERVER + "IT\AutoScripts\Logs\PowerShell\Create_Ps_Albums\")
 $LOG_ROOT = $($LOG_ROOT + (Get-Date).Year + "\" )
@@ -171,6 +171,8 @@ foreach ($session in $SESSIONS)
 Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| END | FINISHED CREATING PROSELECT ALBUMS ")                  
 
 Remove-Variable -ErrorAction Ignore SESSIONS, ERROR_THRESHOLD ,ERROR_COUNT
+
+Set-ExecutionPolicy Restricted
 
 
  function exit-gracefully($exit_code)
