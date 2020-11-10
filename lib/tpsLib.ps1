@@ -3,7 +3,7 @@
 
 
 # importing classes
-. C:\workspace\scripts\brisbane\classes\Session.ps1
+. C:\workspace\scripts\classes\Session.ps1
 
 
 

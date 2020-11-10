@@ -39,49 +39,49 @@ TIP: Set-Execution Policy Bypass
 >Maybe the TASK SCHEDULER in the server is disabled or has crashed?
 #>
 
+# importing classes and functions
+. C:\workspace\scripts\lib\tpsLib.ps1
+
 $SMD_ROOT = "\\192.168.254.5\imagedata\01_CLIENT_FOLDER\*_??\*_Edits\*.jpg" 
 $SMD_DEST = "F:\EDIT_BACKUPS\" ## external HD
-$LOG_ROOT = "\\192.168.254.5\IT\AutoScripts\Logs\PowerShell\brisbane_edits_backup\"
-$LOG_ROOT = $($LOG_ROOT + (Get-Date).Year + "\" )
+$LOG_ROOT = "\\192.168.254.5\IT\AutoScripts\Logs\PowerShell\brisbane-edits-backup\"
 
-# Evaluating LOG directory
+logToFile $LOG_ROOT $("STARTING COPY EDIT_FOLDER TASK ***************************") "INFO"
+
+# Evaluating External HD attached
 try {
-    if (!(Test-path -Path $LOG_ROOT)) {
-        New-Item -ItemType Directory $LOG_ROOT;
+    if (!(Test-path $SMD_DEST -PathType Container)) {
+
+        $SMD_DEST = "D:\EDIT_BACKUPS\" ## external HD 2
+
+        if (!(Test-path $SMD_DEST -PathType Container)) {
+            $SMD_DEST = "F:\EDIT_BACKUPS\" ## external HD 1
+
+            if (!(Test-path $SMD_DEST -PathType Container)) {
+                logToFile $LOG_ROOT $("External HD not found! ") "ERROR"
+                exit exit-gracefully(102)
+            }
+        }
     }
 }
 catch [System.IO.IOException] {
-    Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | evaluanting LOG directory! ")    
+    logToFile $LOG_ROOT $("Error evaluanting connected External HD! ") "ERROR" -exceptionObj $_   
     exit exit-gracefully(102)
 }
-
-# Evaluating LOG file
-$LOG_FILE = $($LOG_ROOT + (Get-Culture).DateTimeFormat.GetAbbreviatedMonthName((Get-Date).month) + ".log")
-try {
-    if (!(Test-path $LOG_FILE -PathType Leaf)) {
-        New-Item -ItemType File $LOG_FILE;
-    }
-}
-catch [System.IO.IOException] {
-    Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | evaluanting LOG file! ")        
+catch {
+    logToFile $LOG_ROOT $("Unknown error! ") "ERROR" -exceptionObj $_   
     exit exit-gracefully(102)
 }
-
-#add year & month to the Destination URL
-$SMD_DEST = $($SMD_DEST + (Get-Date).Year + "\" + (Get-Culture).DateTimeFormat.GetAbbreviatedMonthName((Get-Date).month))
-
-Add-Content $($LOG_FILE) $( "" + (Get-Date) + "| START COPY TASK | ******************************************************   ")
 
 Try {
     $SMD = Get-ChildItem $SMD_ROOT 
 }
 catch [System.Exception] {
-    Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | Could not get list of directories. Get-ChildItem failed execution! ")
+    logToFile $LOG_ROOT $("Could not get list of directories. Get-ChildItem failed execution! ") "ERROR" -exceptionObj $_
 }
-
-if (!(Test-path -Path $SMD_DEST)) {
-    Add-Content $($LOG_FILE ) $(   "" + (Get-Date) + "| WARNING | Directory " + $SMD_DEST + " does not exist! Creating...")
-    New-Item -ItemType Directory $SMD_DEST;
+catch {
+    logToFile $LOG_ROOT $("Unknown error! ") "ERROR" -exceptionObj $_   
+    exit exit-gracefully(102)
 }
 
 for ($i = 0; $i -lt $SMD.Length; $i++) {
@@ -93,18 +93,21 @@ for ($i = 0; $i -lt $SMD.Length; $i++) {
         if ( ! (Test-path -Path $SMD_DEST_EDIT ) ) {
             New-Item -ItemType Directory $SMD_DEST_EDIT
         }
-
     }
     catch [System.Exception] {
-        Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | to create album edit folder for " + $image.FullName)
+        logToFile $LOG_ROOT $("Failed to create album edit folder for " + $image.FullName) "ERROR" -exceptionObj $_            
         continue
     }
+    catch {
+        logToFile $LOG_ROOT $("Unknown error! ") "ERROR" -exceptionObj $_   
+        continue
+    }    
 
     ## Checking if file exist
     if (Test-path ($SMD_DEST_EDIT + "\" + $image.Name) -PathType Leaf) {
         ## Comparing version of files
         if ( $image.LastWriteTimeUtc -eq (Get-ItemProperty -Path ($SMD_DEST_EDIT + "\" + $image.Name)).LastWriteTimeUtc ) {
-          ##no longer need to log it  Add-Content $($LOG_FILE ) $( "" + $DATE + "| Skipped file: " + $image.FullName)
+          ##no longer need to log it
             continue         
         } 
         else {
@@ -112,25 +115,36 @@ for ($i = 0; $i -lt $SMD.Length; $i++) {
             Try { 
                 $DestinationFile = $SMD_DEST_EDIT + "\" + $image.BaseName + "_" + $image.LastWriteTime.Year + $image.LastWriteTime.Month + $image.LastWriteTime.Day + ".jpg"
                 Copy-Item $image -Destination $DestinationFile -Force
-                Add-Content $($LOG_FILE ) $("" + (Get-Date) + "| Re-copied | file: " + $image.FullName)
+                logToFile $LOG_ROOT $("Re-copied file: " + $image.FullName) "INFO"
             }
             catch [System.Exception] {
-                Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | to re-copy file " + $image.FullName)
+                logToFile $LOG_ROOT $("Failed to re-copy file " + $image.FullName) "ERROR" -exceptionObj $_                            
                 continue
             }
+            catch {
+                logToFile $LOG_ROOT $("Unknown error! ") "ERROR" -exceptionObj $_   
+                continue
+            }  
         }
     }
     else { 
         ## Copying a new file
         Try { 
             Copy-Item $image $SMD_DEST_EDIT -Force
-            Add-Content $($LOG_FILE ) $("" + (Get-Date) + "| Copied | file: " + $image.FullName)
+            logToFile $LOG_ROOT $("Copied file " + $image.FullName) "INFO" 
         }
         catch [System.Exception] {
-            Add-Content $($LOG_FILE)  $(  "" + (Get-Date) + "| ERROR | to copy file " + $image.FullName)
+            logToFile $LOG_ROOT $("Failed to copy file " + $image.FullName) "ERROR" -exceptionObj $_
             continue
         }            
-
     }    
 }
-Add-Content $($LOG_FILE ) $( "" + (Get-Date) + "| END COPY TASK | ***************************")
+
+try {
+    Mountvol D: /D
+}
+catch {
+
+}
+
+logToFile $LOG_ROOT $("END COPY EDIT_FOLDER TASK ***************************") "INFO"
