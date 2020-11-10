@@ -324,7 +324,7 @@ function getListOfMystratusSessions {
         [parameter(Mandatory = $true)]
         [String]
         $directoryToSearch,
-        [parameter(Mandatory = $true)]
+        [parameter(Mandatory = $false)]
         [String]
         $filter,
         [parameter(Mandatory = $false)]
